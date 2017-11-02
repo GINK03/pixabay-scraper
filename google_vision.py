@@ -34,6 +34,7 @@ def mapper( name ):
   try:
     save_name = 'vision/' + name.split('/').pop().replace('.jpg', '').replace('.png', '') + '.json'
     if os.path.exists(save_name) is True:
+      print('Already Scaned', name)
       return None
     img = img_to_base64(name)
     res_json = goog_cloud_vison(img)
@@ -70,13 +71,9 @@ if '--minimize' in sys.argv:
       except OSError as e:
         return
       img.save(save_name)
-      print( bairitus, name  )
     except Exception as e:
       print('Some Deep Error as', e)
   names = [name for name in glob.glob('./imgs/*')]
-  for name in names:
-    print(name)
-    _minimize(name)
   with ProcessPoolExecutor(max_workers=16) as exe:
     exe.map( _minimize, names)
 
