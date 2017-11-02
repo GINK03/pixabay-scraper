@@ -49,8 +49,8 @@ def get_image(url, src, tags):
   con = opener.open(request).read()
   """ illsut id """
   linker = src.split('/').pop()
-  open('imgs/' + linker, 'wb').write(con)
-  open('metas/{}.json'.format(linker), "w").write( json.dumps({'linker':linker + '.jpg', 'tags': tags, 'url':url, 'src':src }) )
+  #open('imgs/' + linker, 'wb').write(con)
+  #open('metas/{}.json'.format(linker), "w").write( json.dumps({'linker':linker + '.jpg', 'tags': tags, 'url':url, 'src':src }) )
   print("発見した画像", tags, url, src)
 
 def analyzing(link, soup):
@@ -110,14 +110,3 @@ if __name__ == '__main__':
         for ilink in ilinks:
           if db.get( bytes(ilink, 'utf8')) is None:
             db.put( bytes(ilink, 'utf8'), pickle.dumps(False))
-  '''
-  while True:
-    links =  [ link for link, status in filter(lambda x:x[1] == False, link_status.items()) ]
-    with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
-      for ilinks in executor.map( _map, links):
-        for ilink in ilinks: 
-          if link_status.get(ilink) is None:
-            link_status[ilink] = False
-      for link in links:
-        link_status[link] = True
-  '''

@@ -40,7 +40,7 @@ if '--make_tag_index' in sys.argv:
   for idx, tag in enumerate(tags):
     tag_index[tag] = idx
 
-  open('tag_index.pkl','wb').write( pickle.dumps( tag_index ) )
+  open('tag_index.json','w').write( json.dumps( tag_index, indent=2 ) )
 
 
 def _make_pair(name):
