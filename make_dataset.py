@@ -44,15 +44,14 @@ if '--make_tag_index' in sys.argv:
 
 
 def _make_pair(name):
+  tag_index = json.loads( open('tag_index.json','r').read() )
   try:
     filename = name.split('/').pop().replace('.json', '') 
     pkl_save_name = 'dataset/{}.pkl'.format(name.split('/').pop().replace('.json', ''))
     if os.path.exists(pkl_save_name):
       return
-    if not os.path.exists('./download/{}'.format(filename) ):
-      return
     try:
-      img = Image.open('./download/{}'.format(filename))
+      img = Image.open('./imgs/{}.jpg'.format(filename))
     except OSError as e:
       print( e )
       return
@@ -68,7 +67,7 @@ def _make_pair(name):
     blank = blank.resize( target_size )
     X = np.asanyarray(blank)
     X = X / 255.0
-    y = [0.0]*len(tag_index)
+    y = [0.0]*5000
     try:
       obj  = json.loads( open(name).read() )
       obj = dict([(ds['description'], ds['score']) for ds in obj['responses'].pop()['labelAnnotations']] )
@@ -87,7 +86,6 @@ def _make_pair(name):
 
 import concurrent.futures 
 if '--make_pair' in sys.argv:
-  tag_index = pickle.loads( open('tag_index.pkl','rb').read() )
   names = [name for name in glob.glob('./vision/*.json')]
   with concurrent.futures.ProcessPoolExecutor(max_workers=20) as executor:
     executor.map( _make_pair, names)
