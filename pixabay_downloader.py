@@ -26,33 +26,35 @@ SEED_EXIST          = True
 SEED_NO_EXIST       = False
 # set default state to scrape web pages in Amazon Kindle
 def get_html(url):
-  headers = {"Accept-Language": "en-US,en;q=0.5","User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0","Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","Referer": "http://thewebsite.com","Connection": "keep-alive" } 
+  headers = {"Accept-Language": "en-US,en;q=0.5","User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0","Accept": "*/*", "Referer": url,"Connection": "keep-alive" } 
   request = urllib.request.Request(url=url, headers=headers)
   opener = urllib.request.build_opener()
-  TIME_OUT = 5.
-  #try:
-  html = opener.open(request, timeout = TIME_OUT).read()
-  #except Exception as e:
-  #  print(e)
-  #  return (None, None, None)
+  try:
+    html = opener.open(request).read()
+  except Exception as e:
+    print('Error', e)
+    return (None, None, None)
+    
+  print(url)
+  #print(html)
   soup = bs4.BeautifulSoup(html, "html.parser")
   title = (lambda x:str(x.string) if x != None else 'Untitled')(soup.title )
   return (html, title, soup)
 
 def get_image(url, src, tags):
-  headers = {"Accept-Language": "en-US,en;q=0.5","User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0","Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","Referer": "http://thewebsite.com","Connection": "keep-alive"  } 
-  request = urllib.request.Request(url=imgurl, headers=headers)
+  headers = {"Accept-Language": "en-US,en;q=0.5","User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0","Accept": "*/*","Referer": url, "Connection": "keep-alive"  } 
+  request = urllib.request.Request(url=src, headers=headers)
   request.add_header('Referer', url)
-  opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+  opener = urllib.request.build_opener()
   con = opener.open(request).read()
   """ illsut id """
-  linker = url.split('/').pop()
-  open('imgs/' + linker + '.jpg', 'wb').write(con)
-  open('metas/{}.json'.format(linker), "w").write( json.dumps({'linker':linker + '.jpg', 'tags': tags, 'url':url, 'imgurl':imgurl }) )
-  print("発見した画像", tags, url, imgurl)
+  linker = src.split('/').pop()
+  open('imgs/' + linker, 'wb').write(con)
+  open('metas/{}.json'.format(linker), "w").write( json.dumps({'linker':linker + '.jpg', 'tags': tags, 'url':url, 'src':src }) )
+  print("発見した画像", tags, url, src)
 
 def analyzing(link, soup):
-  for img in soup.find_all('img', {'class': 'image-section__image'}):
+  for img in soup.find_all('img', {'itemprop': 'contentURL'}):
     src = img.get('src')
     alt = img.get('alt')
     get_image(link, src, alt)
@@ -67,6 +69,7 @@ def analyzing(link, soup):
   return iternal_links
 
 def _map(link):
+  #print(link)
   html, title, soup = get_html(link)
   if soup is None:
     return link, []
@@ -89,9 +92,8 @@ if __name__ == '__main__':
   active   = (lambda x:15 if x==None else int(x) )( args_obj.get('active') )
   filename = args_obj.get('file')
 
-  seed = 'https://pixabay.com/ja/%E3%82%AB%E3%83%9C%E3%83%81%E3%83%A3-%E3%83%8F%E3%83%AD%E3%82%A6%E3%82%A3%E3%83%B3-%E9%A1%94-%E7%A7%8B-%E3%83%8F%E3%83%AD%E3%82%A6%E3%82%A3%E3%83%BC%E3%83%B3-%E9%87%8E%E8%8F%9C-%E8%A3%85%E9%A3%BE-%E6%98%8E%E3%82%8B%E3%81%84-2892303/'
- 
-  db = plyvel.DB('pixavay.ldb', create_if_missing=True)
+  seed = 'https://pixabay.com/ja/%E3%83%90%E3%83%A9-%E3%83%94%E3%83%B3%E3%82%AF-%E3%83%94%E3%83%B3%E3%82%AF%E3%81%AE%E3%83%90%E3%83%A9-%E6%BA%80%E9%96%8B%E3%81%AE%E3%83%90%E3%83%A9-%E8%8A%B1-%E3%83%90%E3%83%A9%E3%81%AE%E5%92%B2%E3%81%8F-2892821/'
+  db = plyvel.DB('pixabay.ldb', create_if_missing=True)
   db.put(bytes(seed,'utf8'), pickle.dumps(False))
 
   while True:
@@ -100,12 +102,14 @@ if __name__ == '__main__':
       if pickle.loads(val) == False:
         links.append( key.decode('utf8') )
 
-    for link in links:
-      _link, ilinks = _map(link)
-      db.put(bytes(_link, 'utf8'), pickle.dumps(True) )
-      for ilink in ilinks:
-        if db.get(bytes(ilink, 'utf8')) is None:
-          db.put(bytes(ilink, 'utf8'), pickle.dumps(False))
+    #for link in links:
+    _map(links[0])
+    with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
+      for _link, ilinks in executor.map( _map, links):
+        db.put( bytes(_link, 'utf8'), pickle.dumps(True) )
+        for ilink in ilinks:
+          if db.get( bytes(ilink, 'utf8')) is None:
+            db.put( bytes(ilink, 'utf8'), pickle.dumps(False))
   '''
   while True:
     links =  [ link for link, status in filter(lambda x:x[1] == False, link_status.items()) ]
