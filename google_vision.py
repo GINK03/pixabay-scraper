@@ -45,7 +45,7 @@ def mapper( name ):
 
 if '--scan' in sys.argv:
   names = [name for name in glob.glob('minimize/*.jpg')]
-  #[mapper(name) for name in names#]
+  #[mapper(name) for name in names]
   with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
     executor.map( mapper, names )
 
@@ -75,6 +75,7 @@ if '--minimize' in sys.argv:
       print('Some Deep Error as', e)
   names = [name for name in glob.glob('./imgs/*')]
   for name in names:
+    print(name)
     _minimize(name)
   with ProcessPoolExecutor(max_workers=16) as exe:
     exe.map( _minimize, names)

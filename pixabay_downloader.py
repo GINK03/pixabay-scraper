@@ -49,11 +49,12 @@ def get_image(url, src, tags):
   con = opener.open(request).read()
   """ illsut id """
   linker = src.split('/').pop()
-  #open('imgs/' + linker, 'wb').write(con)
-  #open('metas/{}.json'.format(linker), "w").write( json.dumps({'linker':linker + '.jpg', 'tags': tags, 'url':url, 'src':src }) )
+  open('imgs/' + linker, 'wb').write(con)
+  open('metas/{}.json'.format(linker), "w").write( json.dumps({'linker':linker + '.jpg', 'tags': tags, 'url':url, 'src':src }) )
   print("発見した画像", tags, url, src)
 
 def analyzing(link, soup):
+
   for img in soup.find_all('img', {'itemprop': 'contentURL'}):
     src = img.get('src')
     alt = img.get('alt')
@@ -70,11 +71,15 @@ def analyzing(link, soup):
 
 def _map(link):
   #print(link)
-  html, title, soup = get_html(link)
-  if soup is None:
+  try:
+    html, title, soup = get_html(link)
+    if soup is None:
+      return link, []
+    internal_links = analyzing(link, soup)
+    return link, internal_links
+  except Exception as e:
+    print('Some Deep Error Occured', e)
     return link, []
-  internal_links = analyzing(link, soup)
-  return link, internal_links
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Process Kindle Referenced Index Score.')
