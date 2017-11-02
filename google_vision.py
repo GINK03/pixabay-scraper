@@ -41,13 +41,14 @@ def mapper( name ):
     raw_obj = json.dumps( res_json, indent=2 ) 
     open(save_name, 'w').write( raw_obj )
     print(name)
+    print(raw_obj)
   except Exception as e:
     print(e) 
 
 if '--scan' in sys.argv:
   names = [name for name in glob.glob('minimize/*.jpg')]
   #[mapper(name) for name in names]
-  with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
+  with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
     executor.map( mapper, names )
 
 if '--minimize' in sys.argv:
@@ -56,16 +57,14 @@ if '--minimize' in sys.argv:
   def _minimize(name):
     try:
       save_name = 'minimize/' + name.split('/').pop()
-      if os.path.exists(save_name):
-        return
       try:
         img = Image.open(name)
       except OSError as e:
         return
       size = img.size
       maxx = max( [size[0], size[1]] )
-      bairitsu = size[0]//224
-      resize = (size[0]//bairitsu, size[1]//bairitsu)
+      bairitsu = maxx/224
+      resize = (int(size[0]/bairitsu), int(size[1]/bairitsu))
       try:
         img = img.resize( resize )
       except OSError as e:

@@ -51,7 +51,10 @@ def _make_pair(name):
     if os.path.exists(pkl_save_name):
       return
     try:
-      img = Image.open('./imgs/{}.jpg'.format(filename))
+      if os.path.exists('./imgs/{}.jpg'.format(filename)):
+        img = Image.open('./imgs/{}.jpg'.format(filename))
+      else:
+        img = Image.open('./imgs/{}.jpg.jpg'.format(filename))
     except OSError as e:
       print( e )
       return
