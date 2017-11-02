@@ -104,7 +104,7 @@ if __name__ == '__main__':
 
     #for link in links:
     _map(links[0])
-    with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=200) as executor:
       for _link, ilinks in executor.map( _map, links):
         db.put( bytes(_link, 'utf8'), pickle.dumps(True) )
         for ilink in ilinks:
