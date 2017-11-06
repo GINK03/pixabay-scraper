@@ -78,9 +78,38 @@ if '--minimize' in sys.argv:
 
 if '--remove' in sys.argv:
   for name in glob.glob('vision/*'):
-    o = json.loads(open(name).read())
+    try:
+      o = json.loads(open(name).read())
+    except json.decoder.JSONDecodeError as e:
+      print(e)
+      os.remove(name)
+      continue
     if o.get('error') is not None:
       os.remove(name)
       print( o )
 
-
+if '--remove_text' in sys.argv:
+  for name in glob.glob('vision/*'):
+    try:
+      o = json.loads(open(name).read())
+    except json.decoder.JSONDecodeError as e:
+      #print(e)
+      os.remove(name)
+      continue
+    try:
+      descs = []
+      for obj in o['responses'][0]['labelAnnotations']:
+        descs.append(obj['description'])
+      #print( descs )
+      if 'text' in descs and 'font' in descs:
+        #print(name)
+        os.remove(name)
+        jpeg = name.split('/').pop().replace('.json', '')
+        img = glob.glob('./imgs/{}.jpg'.format(jpeg))[0]
+        mini = glob.glob('./minimize/{}.jpg'.format(jpeg))[0]
+        os.remove(img);os.remove(mini)
+        print('shuld be clean ', img, mini)
+    except Exception as e:
+      print(e)
+      #print(o)
+      ...

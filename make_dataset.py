@@ -6,7 +6,7 @@ import glob
 import random
 import sys
 import os
-
+from gzip import compress
 if '--make_tag_index' in sys.argv:
   dss = []
   for name in glob.glob('./vision/*.json'):
@@ -34,7 +34,7 @@ if '--make_tag_index' in sys.argv:
   for tag, freq in sorted( tags_freq.items(), key=lambda x:x[1]*-1)[:5000]:
     print( tag, freq )
     tags.append( tag )
-  random.shuffle( tags )
+  #random.shuffle( tags )
 
   tag_index = {}
   for idx, tag in enumerate(tags):
@@ -79,8 +79,8 @@ def _make_pair(name):
       if tag_index.get(tag) is None:
         continue
       y[ tag_index[tag] ] = score
-    print( [ y2 for y2 in y if y2 != 0.0 ] )
-    open('dataset/{}.pkl'.format(name.split('/').pop().replace('.json', '')), 'wb').write( pickle.dumps( (X, y) ) )
+    #print( [ y2 for y2 in y if y2 != 0.0 ] )
+    open('dataset/{}.pkl'.format(name.split('/').pop().replace('.json', '')), 'wb').write( compress(pickle.dumps( (X, y) )) )
   except Exception as e:
     print( e )
 
