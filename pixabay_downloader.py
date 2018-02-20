@@ -21,19 +21,22 @@ import re
 import shutil
 import concurrent.futures 
 import hashlib
+import requests
+import urllib.parse
 
 SEED_EXIST          = True
 SEED_NO_EXIST       = False
 HEADER = {"Accept-Language": "ja,en-US;q=0.9,en;q=0.8", "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36","Accept": "*/*", "Connection": "keep-alive" } 
+
 # set default state to scrape web pages in Amazon Kindle
 def get_html(url):
-  request = urllib.request.Request(url=url, headers=HEADER)
-  opener = urllib.request.build_opener()
   try:
-    html = opener.open(request).read()
+    r = requests.get(url, headers=HEADER)
   except Exception as e:
     print('Error', e)
-    return (None, None, None)
+    return None
+  r.encoding = r.apparent_encoding 
+  html = r.text
   print(url)
   #print(html)
   soup = bs4.BeautifulSoup(html, "html.parser")
@@ -41,14 +44,15 @@ def get_html(url):
   return (html, title, soup)
 
 def get_image(link, src, tags):
-  HEADER['Referer'] = link
-  request = urllib.request.Request(url=src, headers=HEADER)
-  request.add_header('Referer', link)
-  opener = urllib.request.build_opener()
-  con = opener.open(request).read()
+  HEADER['Referer'] = urllib.parse.quote(link)
+  print(src)
+  r = requests.get(src, headers=HEADER)
+  r.raw.decode_content = True
+  img = r.content
+  #print(img)
   name = hashlib.sha256(bytes(link, 'utf8')).hexdigest()
-  open('imgs/{}.jpg'.format(name), 'wb').write(con)
-  open('metas/{}.json'.format(name), "w").write( json.dumps({'name':name, 'tags': tags, 'link':link, 'src':src }) )
+  open('imgs/{}.jpg'.format(name), 'wb').write(img)
+  open('metas/{}.json'.format(name), "w").write( json.dumps({'name':name, 'tags': tags, 'link':link, 'src':src }, indent=2, ensure_ascii=False) )
   print("発見した画像", tags, link, src)
 
 def analyzing(link, soup):
@@ -61,31 +65,29 @@ def analyzing(link, soup):
     url = link.get('href')
     if url is None:
       continue
-    if 'https:/pixabay.com/' in url or url[0] == '/':
+    
+    if (len(url) >= 1 and url[0] == '/') or 'https://pixabay.com' in url:
       url = 'https://pixabay.com' + url if url[0] == '/' else url
       iternal_links.append( url )
   return iternal_links
 
 def _map(link):
-  try:
+  #try:
     name = hashlib.sha256(bytes(link, 'utf8')).hexdigest()
     if os.path.exists('htmls/{}'.format(name)) is True:
       return [], []
     html, title, soup = get_html(link)
-    open('htmls/{}'.format(name), 'w').write( html.decode() )
+    open('htmls/{}'.format(name), 'w').write( html )
     if soup is None:
       return link, []
     internal_links = analyzing(link, soup)
     open('links/{}'.format(name), 'w').write( '\n'.join(internal_links) )
     return link, internal_links
-  except Exception as e:
-    print('Some Deep Error Occured', e)
-    return link, []
 
 if __name__ == '__main__':
-  seed = 'https://pixabay.com/ja/%E3%83%90%E3%83%A9-%E3%83%94%E3%83%B3%E3%82%AF-%E3%83%94%E3%83%B3%E3%82%AF%E3%81%AE%E3%83%90%E3%83%A9-%E6%BA%80%E9%96%8B%E3%81%AE%E3%83%90%E3%83%A9-%E8%8A%B1-%E3%83%90%E3%83%A9%E3%81%AE%E5%92%B2%E3%81%8F-2892821/'
-  links = {seed}
-  while True:
+  seed = 'https://pixabay.com/ja/ビーチ-海-ダンス-女の子-バレリーナ-バレエ-2952391/'
+  links = list([seed])
+  while links != set():
     _links = set()
     with concurrent.futures.ProcessPoolExecutor(max_workers=16) as executor:
       for _, ilinks in executor.map( _map, links):
