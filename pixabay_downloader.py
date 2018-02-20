@@ -87,6 +87,8 @@ def _map(link):
 if __name__ == '__main__':
   seed = 'https://pixabay.com/ja/ビーチ-海-ダンス-女の子-バレリーナ-バレエ-2952391/'
   links = list([seed])
+  if '--recover' in sys.argv:
+    links = pickle.load(open('./urls.pkl', 'rb'))
   while links != set():
     _links = set()
     with concurrent.futures.ProcessPoolExecutor(max_workers=16) as executor:
